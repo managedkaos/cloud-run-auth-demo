@@ -76,7 +76,9 @@ resource "google_firestore_database" "database" {
 }
 
 # --- 4. Configure Firebase Auth (Identity Platform) ---
-# Once per project
+#
+# TODO: Break this out so it is only applied once per project
+#
 # resource "google_identity_platform_config" "auth" {
 #  provider = google-beta
 #  project  = var.project_id
@@ -123,6 +125,15 @@ resource "google_cloud_run_v2_service" "cloud_run" {
     }
   }
   depends_on = [google_firestore_database.database]
+
+  lifecycle {
+    ignore_changes = [
+      client,
+      client_version,
+      build_config,
+      template[0].containers,
+    ]
+  }
 }
 
 # --- 6. Allow Public Access ---
@@ -133,7 +144,117 @@ resource "google_cloud_run_v2_service_iam_member" "public_access" {
   member   = "allUsers"
 }
 
-# --- 7. Outputs ---
+# --- 7. Blocking Function & Secrets ---
+
+# Enable additional APIs
+resource "google_project_service" "additional_services" {
+  for_each = toset([
+    "cloudfunctions.googleapis.com",
+    "secretmanager.googleapis.com",
+    "cloudbuild.googleapis.com",
+    "artifactregistry.googleapis.com"
+  ])
+  service            = each.key
+  disable_on_destroy = false
+}
+
+# Create Secret for Allowed Emails
+resource "google_secret_manager_secret" "auth_allowed_emails" {
+  provider  = google-beta
+  project   = var.project_id
+  secret_id = "auth-allowed-emails"
+  replication {
+    auto {}
+  }
+  depends_on = [google_project_service.additional_services]
+}
+
+resource "google_secret_manager_secret_version" "auth_allowed_emails_version" {
+  provider    = google-beta
+  secret      = google_secret_manager_secret.auth_allowed_emails.id
+  secret_data = "placeholder@example.com" # Initial placeholder
+
+  lifecycle {
+    ignore_changes = [
+      enabled,
+      secret_data
+    ]
+  }
+}
+
+# Service Account for the Function
+resource "google_service_account" "function_sa" {
+  account_id   = "auth-blocking-function-sa"
+  display_name = "Auth Blocking Function Service Account"
+}
+
+# Grant Function SA access to the Secret
+resource "google_secret_manager_secret_iam_member" "function_sa_secret_access" {
+  project   = var.project_id
+  secret_id = google_secret_manager_secret.auth_allowed_emails.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.function_sa.email}"
+}
+
+# Storage Bucket for Function Source
+resource "google_storage_bucket" "function_bucket" {
+  provider                    = google-beta
+  project                     = var.project_id
+  name                        = "${var.project_id}-gcf-source"
+  location                    = var.region
+  uniform_bucket_level_access = true
+  depends_on                  = [google_project_service.additional_services]
+}
+
+# Zip the function code
+data "archive_file" "function_zip" {
+  type        = "zip"
+  source_dir  = "../blocking_functions"
+  output_path = "/tmp/blocking_functions.zip"
+}
+
+# Upload zip to bucket
+resource "google_storage_bucket_object" "function_archive" {
+  name   = "blocking_functions.${data.archive_file.function_zip.output_md5}.zip"
+  bucket = google_storage_bucket.function_bucket.name
+  source = data.archive_file.function_zip.output_path
+}
+
+# Cloud Function (Gen 2)
+resource "google_cloudfunctions2_function" "blocking_function" {
+  provider = google-beta
+  project  = var.project_id
+  name     = "auth-before-create"
+  location = var.region
+
+  build_config {
+    runtime     = "nodejs24"
+    entry_point = "beforeCreate" # Export name in index.js
+    source {
+      storage_source {
+        bucket = google_storage_bucket.function_bucket.name
+        object = google_storage_bucket_object.function_archive.name
+      }
+    }
+  }
+
+  service_config {
+    max_instance_count    = 10
+    available_memory      = "256M"
+    timeout_seconds       = 60
+    service_account_email = google_service_account.function_sa.email
+    environment_variables = {
+      GCLOUD_PROJECT = var.project_id
+    }
+  }
+
+  depends_on = [
+    google_project_service.additional_services,
+    google_secret_manager_secret_iam_member.function_sa_secret_access
+  ]
+}
+
+# --- 8. Outputs ---
 output "project_id" {
   value = var.project_id
 }
@@ -146,4 +267,8 @@ output "service_account_email" {
 output "cloud_run_url" {
   value       = google_cloud_run_v2_service.cloud_run.uri
   description = "The publicly accessible URL of the Cloud Run service"
+}
+
+output "blocking_function_uri" {
+  value = google_cloudfunctions2_function.blocking_function.service_config[0].uri
 }

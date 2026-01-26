@@ -1,3 +1,5 @@
+all: upgrade plan
+
 plan:
 	terraform plan
 
