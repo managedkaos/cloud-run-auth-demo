@@ -37,7 +37,21 @@ A `Makefile` has been provided for easy deployment.
 
    This command runs: `gcloud run deploy cloud-run-and-firebase --source . --project cloud-run-and-firebase --region us-central1 --allow-unauthenticated`
 
-## 3. Verification Steps
+3. After deployment, the `gcloud` command will output a Service URL (e.g., `https://cloud-run-and-firebase-xyz-uc.a.run.app`). Save this URL for the next steps.
+
+## 3. Google Login Setup
+
+To enable the "Sign in with Google" functionality:
+
+1. Go to the [Firebase Console](https://console.firebase.google.com/).
+2. Navigate to **Authentication** > **Sign-in method**.
+3. Click **Add new provider** and select **Google**.
+4. Toggle the **Enable** switch.
+5. Provide a **Project support email**.
+6. Click **Save**.
+7. Select **Authentication** > **Settings** > **Authorized domains**. Add the Cloud Run domain.
+
+## 4. Verification Steps
 
 ### Create a Test User
 
