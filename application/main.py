@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Form, Depends, Response
+from fastapi import FastAPI, Request, Form, Depends, Response, HTTPException
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -58,3 +58,58 @@ async def create_item(name: str = Form(...), user=Depends(get_current_user)):
         "uid": user["uid"]
     })
     return RedirectResponse(url="/dashboard", status_code=303)
+
+@app.get("/items/{item_path}/edit")
+async def edit_item(request: Request, item_path: str, user=Depends(get_current_user)):
+    if not user:
+        return RedirectResponse(url="/login")
+
+    doc_ref = db.collection("items").document(item_path)
+    doc = doc_ref.get()
+
+    if not doc.exists:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    item_data = doc.to_dict()
+    if item_data.get("uid") != user["uid"]:
+         raise HTTPException(status_code=403, detail="Not authorized")
+
+    return templates.TemplateResponse("edit_item.html", {"request": request, "item": item_data, "item_id": item_path})
+
+@app.post("/items/{item_path}/update")
+async def update_item(item_path: str, name: str = Form(...), user=Depends(get_current_user)):
+    if not user:
+        raise HTTPException(status_code=401)
+
+    doc_ref = db.collection("items").document(item_path)
+    doc = doc_ref.get()
+
+    if not doc.exists:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    if doc.to_dict().get("uid") != user["uid"]:
+         raise HTTPException(status_code=403, detail="Not authorized")
+
+    doc_ref.update({"name": name})
+    return RedirectResponse(url="/dashboard", status_code=303)
+
+@app.post("/items/{item_path}/delete")
+async def delete_item(item_path: str, user=Depends(get_current_user)):
+    if not user:
+        raise HTTPException(status_code=401)
+
+    doc_ref = db.collection("items").document(item_path)
+    doc = doc_ref.get()
+
+    if not doc.exists:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    if doc.to_dict().get("uid") != user["uid"]:
+         raise HTTPException(status_code=403, detail="Not authorized")
+
+    doc_ref.delete()
+    return RedirectResponse(url="/dashboard", status_code=303)
+
+@app.exception_handler(404)
+async def custom_404_handler(request: Request, exc: HTTPException):
+    return templates.TemplateResponse("404.html", {"request": request}, status_code=404)

@@ -1,12 +1,18 @@
 /* Modern Color Palette & Reset */
 :root {
-    --primary-color: #6366f1; /* Indigo 500 */
-    --primary-hover: #4f46e5; /* Indigo 600 */
-    --background-color: #f3f4f6; /* Gray 100 */
+    --primary-color: #6366f1;
+    /* Indigo 500 */
+    --primary-hover: #4f46e5;
+    /* Indigo 600 */
+    --background-color: #f3f4f6;
+    /* Gray 100 */
     --card-bg: #ffffff;
-    --text-primary: #1f2937; /* Gray 800 */
-    --text-secondary: #6b7280; /* Gray 500 */
-    --border-color: #e5e7eb; /* Gray 200 */
+    --text-primary: #1f2937;
+    /* Gray 800 */
+    --text-secondary: #6b7280;
+    /* Gray 500 */
+    --border-color: #e5e7eb;
+    /* Gray 200 */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --radius: 0.75rem;
@@ -143,6 +149,18 @@ input:focus {
     color: var(--text-primary);
 }
 
+.btn-danger {
+    background-color: #ef4444;
+    /* Red 500 */
+    border: none;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #dc2626;
+    /* Red 600 */
+}
+
 /* List Items */
 .item-list {
     list-style: none;
@@ -162,10 +180,23 @@ input:focus {
 }
 
 /* Utility */
-.text-center { text-align: center; }
-.mt-4 { margin-top: 1rem; }
-.mb-4 { margin-bottom: 1rem; }
-.flex-col { display: flex; flexDirection: column; gap: 1rem;}
+.text-center {
+    text-align: center;
+}
+
+.mt-4 {
+    margin-top: 1rem;
+}
+
+.mb-4 {
+    margin-bottom: 1rem;
+}
+
+.flex-col {
+    display: flex;
+    flexDirection: column;
+    gap: 1rem;
+}
 
 /* Glassmorphism login page specific */
 .login-page {
