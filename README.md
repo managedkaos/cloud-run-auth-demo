@@ -73,9 +73,7 @@ This project uses a Firebase Auth Blocking Function to restrict access to author
     - Select **Add New Version**.
 2. **Enable Blocking Function**:
     - Go to [Firebase Console](https://console.firebase.google.com/) > **Authentication** > **Settings** > **Blocking functions**.
-    - Under **Before account creation (beforeCreate)**, select the blocking function that was deployed by Terraform.
-    - Toggle **Enable**.
-    - Select the deployed function (e.g., `auth-before-create`).
+    - Under **Before account creation (beforeCreate)**, select the blocking function that was deployed by Terraform (e.g., `auth-before-create`).
     - Select **Save**.
 
 ## 5. Verification Steps
