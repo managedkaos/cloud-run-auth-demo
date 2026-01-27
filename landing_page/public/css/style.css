@@ -28,7 +28,6 @@ body {
     color: var(--text-primary);
     line-height: 1.6;
     overflow-x: hidden;
-    text-align: center;
 }
 
 a {
@@ -146,34 +145,6 @@ header {
     align-items: center;
 }
 
-.text-center {
-    text-align: center;
-}
-
-.section-heading {
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.section-title {
-    margin-bottom: 1rem;
-}
-
-.section-subtitle {
-    margin-top: 1rem;
-    color: var(--text-secondary);
-}
-
-.feature-card-text {
-    margin-top: 0.5rem;
-    color: var(--text-secondary);
-}
-
-.cta-row {
-    text-align: center;
-    margin-top: 3rem;
-}
-
 .logo {
     font-weight: 800;
     font-size: 1.5rem;
@@ -189,8 +160,8 @@ header {
 }
 
 .hero-content {
-    max-width: 600px;
-    text-align: center;
+    max-width: 800px;
+    text-align: left;
 }
 
 .hero p {
@@ -211,7 +182,7 @@ header {
     align-items: center;
     gap: 3rem;
     margin-top: 4rem;
-    max-width: 600px;
+    max-width: 800px;
     margin-left: auto;
     margin-right: auto;
 }
@@ -220,11 +191,10 @@ header {
     width: 100%;
     padding: 2rem;
     border-radius: 1rem;
-    background-color: #f9fafb;
+    background-color: white;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e5e7eb;
+    border: 1px solid #f3f4f6;
     transition: transform 0.2s;
-    text-align: center;
 }
 
 .feature-card:hover {
