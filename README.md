@@ -12,14 +12,17 @@ TODO: Add a custom domain
 
 ## 1. Firebase Configuration (Critical Step)
 
+TODO: This should show steps for updating the .env and/or environment configuration
+
 Before deploying, you must update the Firebase configuration in `application/templates/login.html`.
 
 1. Go to the [Firebase Console](https://console.firebase.google.com/).
 2. Select your project (`cloud-run-and-firebase`).
 3. Navigate to **Project Settings** > **General**.
 4. Scroll down to **Your apps**. If no web app exists, select the `</>` icon to register a new web app.
-5. Copy the `firebaseConfig` object (apiKey, authDomain, etc.).
-6. Open `application/templates/login.html` and replace the placeholder config with your actual values:
+5. Under **SDK setup and configuration** select **Config**.
+6. Copy the `firebaseConfig` object (apiKey, authDomain, etc.).
+7. Open `application/templates/login.html` and replace the placeholder config with your actual values:
 
 ```javascript
   const firebaseConfig = {
@@ -29,6 +32,28 @@ Before deploying, you must update the Firebase configuration in `application/tem
     // ...
   };
 ```
+
+## X. Update the `firebase-config` Secret in GCP
+
+In the `./application` directory, run the following commands.
+
+1. Give your user account permission to update the secret:
+
+    TODO: Skip this step on the validation cycle to see if the "add" command can be run without adding the user account as secretAccessor
+
+    ```bash
+    gcloud secrets add-iam-policy-binding firebase-config \
+        --member='user:YOUR_GCP_ACCOUNT_EMAIL_ADDRESS' \
+        --role='roles/secretmanager.secretAccessor'
+    ```
+
+1. Add a new secret version with the contents of `firebase-config.json`.
+
+    ```bash
+    gcloud secrets versions add firebase-config --data-file="firebase-config.json"
+    ```
+
+(Or add in the GCP console?)
 
 ## 2. Deployment
 
@@ -66,7 +91,7 @@ This project uses a Firebase Auth Blocking Function to restrict access to author
 >
 > **Manual Configuration**: You must manually enable "Blocking functions" in the Firebase Console after deployment.
 >
-> **Secret Management**: You will need to add the actual authorized emails to the created Secret in the Google Cloud Console or via CLI. The Terraform configuration will create the Secret with a placeholder value.
+> **Secret Management**: You will need to add the actual authorized emails to the created Secret in the Google Cloud Console or via CLI. The Terraform configuration will create the Secret with the placeholder value `test@example.com`.  You can use that value without modifying the secret.  But you'll still need to create the user in Firebase.
 
 1. **Configure Secret**:
     - Go to [Secret Manager](https://console.cloud.google.com/security/secret-manager).
@@ -75,10 +100,13 @@ This project uses a Firebase Auth Blocking Function to restrict access to author
     - Enter a comma-separated list of authorized emails (e.g., `user1@gmail.com,user2@example.com`).
     - Select **Disable all past versions**.
     - Select **Add New Version**.
+    - TODO: Add steps to do this from the command line; maybe include a helper script to manage a file that is ignored by git, contains one email per line, and the script formats them as needed for the variable to work properly (all on one line)
 2. **Enable Blocking Function**:
     - Go to [Firebase Console](https://console.firebase.google.com/) > **Authentication** > **Settings** > **Blocking functions**.
     - Under **Before account creation (beforeCreate)**, select the blocking function that was deployed by Terraform (e.g., `auth-before-create`).
     - Select **Save**.
+
+TODO: Add a note about disabling the blocking function to allow anyone to create an account view the application as an authorized user, essentially anonymous access to the app.
 
 ## 5. Verification Steps
 

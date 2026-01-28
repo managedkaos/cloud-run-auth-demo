@@ -27,30 +27,15 @@
 </div>
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+    import {
+        getAuth,
+        signInWithEmailAndPassword,
+        GoogleAuthProvider,
+        signInWithPopup
+    } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
 
-    // TODO: REPLACE THIS WITH YOUR FIREBASE CONFIG FROM CONSOLE
-    // Go to Firebase Console > Project Settings > General > Your Apps > SDK Setup and Configuration
-    //const firebaseConfig = {
-    //    apiKey: "YOUR_API_KEY",
-    //    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    //    projectId: "YOUR_PROJECT_ID",
-    //    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    //    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    //    appId: "YOUR_APP_ID"
-    //};
-
-    const firebaseConfig = {
-        apiKey: "AIzaSyBQB2Cu1_zWExoECU2OV0w-8BJ3H-bpM24",
-        authDomain: "cloud-run-and-firebase.firebaseapp.com",
-        projectId: "cloud-run-and-firebase",
-        storageBucket: "cloud-run-and-firebase.firebasestorage.app",
-        messagingSenderId: "662380295235",
-        appId: "1:662380295235:web:f277cfa6e0a9e352bf90f6",
-        measurementId: "G-ENKEMEB2TF"
-    };
-
+    const firebaseConfig = {{ firebase_config | tojson }};
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();

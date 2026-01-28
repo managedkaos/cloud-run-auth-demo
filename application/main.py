@@ -5,10 +5,19 @@ from fastapi.staticfiles import StaticFiles
 from database import db
 from auth import get_current_user
 from pydantic import BaseModel
+import os, json
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+firebase_config_raw = os.getenv("FIREBASE_CONFIG_JSON")
+
+if firebase_config_raw:
+    firebase_config = json.loads(firebase_config_raw)
+else:
+    # Fallback for local development
+    firebase_config = {}
 
 class SessionRequest(BaseModel):
     token: str
@@ -19,7 +28,7 @@ async def root():
 
 @app.get("/login")
 async def login(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse("login.html", {"request": request,"firebase_config": firebase_config})
 
 @app.post("/auth/session")
 async def create_session(request: Request, session_data: SessionRequest):

@@ -54,6 +54,10 @@ resource "google_project_service" "services" {
     "firestore.googleapis.com",       # Firestore
     "identitytoolkit.googleapis.com", # Firebase Auth
     "firebase.googleapis.com",        # Firebase Management
+    "cloudfunctions.googleapis.com",  # Cloud Functions
+    "secretmanager.googleapis.com",   # Secret Manager
+    "cloudbuild.googleapis.com",      # Cloud Build
+    "artifactregistry.googleapis.com" # Arifact Registry
   ])
   service            = each.key
   disable_on_destroy = false
@@ -122,6 +126,15 @@ resource "google_cloud_run_v2_service" "cloud_run" {
         name  = "PROJECT_ID"
         value = var.project_id
       }
+      env {
+        name = "FIREBASE_CONFIG_JSON"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.firebase_config.secret_id
+            version = "latest"
+          }
+        }
+      }
     }
   }
   depends_on = [google_firestore_database.database]
@@ -146,33 +159,56 @@ resource "google_cloud_run_v2_service_iam_member" "public_access" {
 
 # --- 7. Blocking Function & Secrets ---
 
-# Enable additional APIs
-resource "google_project_service" "additional_services" {
-  for_each = toset([
-    "cloudfunctions.googleapis.com",
-    "secretmanager.googleapis.com",
-    "cloudbuild.googleapis.com",
-    "artifactregistry.googleapis.com"
-  ])
-  service            = each.key
-  disable_on_destroy = false
+# Create Secret for Firebase Config
+resource "google_secret_manager_secret" "firebase_config" {
+  provider   = google-beta
+  project    = var.project_id
+  secret_id  = "firebase-config"
+  depends_on = [google_project_service.services]
+
+  replication {
+    auto {}
+  }
+}
+
+# Create Initial placeholder for Firebase Config
+resource "google_secret_manager_secret_version" "firebase_config_version" {
+  provider    = google-beta
+  secret      = google_secret_manager_secret.firebase_config.id
+  secret_data = "{}"
+
+  lifecycle {
+    ignore_changes = [
+      enabled,
+      secret_data
+    ]
+  }
+}
+
+# Grant Cloud Run Access to the Firebase Config Secret
+resource "google_secret_manager_secret_iam_member" "firebase_config_access" {
+  secret_id = google_secret_manager_secret.firebase_config.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.cloud_run_sa.email}"
 }
 
 # Create Secret for Allowed Emails
 resource "google_secret_manager_secret" "auth_allowed_emails" {
-  provider  = google-beta
-  project   = var.project_id
-  secret_id = "auth-allowed-emails"
+  provider   = google-beta
+  project    = var.project_id
+  secret_id  = "auth-allowed-emails"
+  depends_on = [google_project_service.services]
+
   replication {
     auto {}
   }
-  depends_on = [google_project_service.additional_services]
 }
 
+# Create Initial placeholder for Allowed Emails
 resource "google_secret_manager_secret_version" "auth_allowed_emails_version" {
   provider    = google-beta
   secret      = google_secret_manager_secret.auth_allowed_emails.id
-  secret_data = "placeholder@example.com" # Initial placeholder
+  secret_data = "test@example.com"
 
   lifecycle {
     ignore_changes = [
@@ -203,7 +239,7 @@ resource "google_storage_bucket" "function_bucket" {
   name                        = "${var.project_id}-gcf-source"
   location                    = var.region
   uniform_bucket_level_access = true
-  depends_on                  = [google_project_service.additional_services]
+  depends_on                  = [google_project_service.services]
 }
 
 # Zip the function code
@@ -249,7 +285,7 @@ resource "google_cloudfunctions2_function" "blocking_function" {
   }
 
   depends_on = [
-    google_project_service.additional_services,
+    google_project_service.services,
     google_secret_manager_secret_iam_member.function_sa_secret_access
   ]
 }

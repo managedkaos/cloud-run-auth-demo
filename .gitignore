@@ -207,3 +207,4 @@ marimo/_lsp/
 __marimo__/
 .terraform/
 terraform.tfvars
+firebase-config.json
