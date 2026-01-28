@@ -117,6 +117,9 @@ resource "google_cloud_run_v2_service" "cloud_run" {
   name     = var.name
   location = var.region
 
+  # change this to true to prevent accidental deletion
+  deletion_protection = false
+
   template {
     service_account = google_service_account.cloud_run_sa.email
     containers {
@@ -166,6 +169,9 @@ resource "google_secret_manager_secret" "firebase_config" {
   secret_id  = "firebase-config"
   depends_on = [google_project_service.services]
 
+  # change this to true to prevent accidental deletion
+  deletion_protection = false
+
   replication {
     auto {}
   }
@@ -198,6 +204,9 @@ resource "google_secret_manager_secret" "auth_allowed_emails" {
   project    = var.project_id
   secret_id  = "auth-allowed-emails"
   depends_on = [google_project_service.services]
+
+  # change this to true to prevent accidental deletion
+  deletion_protection = false
 
   replication {
     auto {}
