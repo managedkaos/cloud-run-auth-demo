@@ -1,0 +1,81 @@
+swagger: "2.0"
+info:
+  title: fastapi-gateway
+  version: "1.0.0"
+schemes:
+  - https
+basePath: /api
+produces:
+  - application/json
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: x-api-key
+    in: header
+security:
+  - api_key: []
+paths:
+  /items/create:
+    post:
+      summary: Create Item
+      operationId: createItem
+      consumes:
+        - application/x-www-form-urlencoded
+      x-google-backend:
+        address: ${cloud_run_url}/items/create
+      responses:
+        "200":
+          description: OK
+  /items/{item_path}/update:
+    post:
+      summary: Update Item
+      operationId: updateItem
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - name: item_path
+          in: path
+          required: true
+          type: string
+      x-google-backend:
+        address: ${cloud_run_url}/items/{item_path}/update
+      responses:
+        "200":
+          description: OK
+  /items/{item_path}/delete:
+    post:
+      summary: Delete Item
+      operationId: deleteItem
+      parameters:
+        - name: item_path
+          in: path
+          required: true
+          type: string
+      x-google-backend:
+        address: ${cloud_run_url}/items/{item_path}/delete
+      responses:
+        "200":
+          description: OK
+  /items:
+    get:
+      summary: List Items
+      operationId: listItems
+      x-google-backend:
+        address: ${cloud_run_url}/items
+      responses:
+        "200":
+          description: OK
+  /item/{item_path}:
+    get:
+      summary: Get Item
+      operationId: getItem
+      parameters:
+        - name: item_path
+          in: path
+          required: true
+          type: string
+      x-google-backend:
+        address: ${cloud_run_url}/item/{item_path}
+      responses:
+        "200":
+          description: OK

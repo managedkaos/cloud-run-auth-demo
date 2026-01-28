@@ -8,8 +8,12 @@ TODO: Add steps for local development using the Firebase emulator
 TODO: Add API Gateway to Terraform configuration for API access
 TODO: Add steps for terraform deployment including creating the service account
 TODO: After terraform deployment, save the URL from the output
+TODO: API gateway list: `gcloud services list --available --filter="name:apigateway"`
+TODO: API gateway enable? `gcloud services enable cloud-run-and-firebase-api-156nh95groram.apigateway.cloud-run-and-firebase.cloud.goog`
 TODO: Add steps for static landing page deployment.
 TODO: Add a custom domain
+TODO: For the API Gateway, consider adding quota limits
+TODO: for the setup, need to login with `gcloud auth application-default login --billing-project PROJECT_ID`
 
 ## 1. Firebase Configuration (Critical Step)
 

@@ -32,17 +32,23 @@ terraform {
       source  = "hashicorp/google-beta"
       version = "~> 7.0"
     }
+    # time = {
+    #   source  = "hashicorp/time"
+    #   version = "~> 0.9"
+    # }
   }
 }
 
 provider "google" {
-  project = var.project_id
-  region  = var.region
+  project         = var.project_id
+  region          = var.region
+  billing_project = var.project_id
 }
 
 provider "google-beta" {
   project               = var.project_id
   region                = var.region
+  billing_project       = var.project_id
   user_project_override = true
 }
 
@@ -50,14 +56,18 @@ provider "google-beta" {
 # --- 2. Enable Required APIs ---
 resource "google_project_service" "services" {
   for_each = toset([
-    "run.googleapis.com",             # Cloud Run
-    "firestore.googleapis.com",       # Firestore
-    "identitytoolkit.googleapis.com", # Firebase Auth
-    "firebase.googleapis.com",        # Firebase Management
-    "cloudfunctions.googleapis.com",  # Cloud Functions
-    "secretmanager.googleapis.com",   # Secret Manager
-    "cloudbuild.googleapis.com",      # Cloud Build
-    "artifactregistry.googleapis.com" # Arifact Registry
+    "run.googleapis.com",               # Cloud Run
+    "firestore.googleapis.com",         # Firestore
+    "identitytoolkit.googleapis.com",   # Firebase Auth
+    "firebase.googleapis.com",          # Firebase Management
+    "cloudfunctions.googleapis.com",    # Cloud Functions
+    "secretmanager.googleapis.com",     # Secret Manager
+    "cloudbuild.googleapis.com",        # Cloud Build
+    "artifactregistry.googleapis.com",  # Arifact Registry
+    "apigateway.googleapis.com",        # API Gateway
+    "apikeys.googleapis.com",           # API Key Credentials
+    "servicemanagement.googleapis.com", # Service Management
+    "servicecontrol.googleapis.com"     # Service Control
   ])
   service            = each.key
   disable_on_destroy = false
@@ -299,7 +309,86 @@ resource "google_cloudfunctions2_function" "blocking_function" {
   ]
 }
 
-# --- 8. Outputs ---
+# --- 8. API Gateway ---
+resource "google_api_gateway_api" "api" {
+  provider = google-beta
+  project  = var.project_id
+  api_id   = "${var.name}-api"
+
+  depends_on = [google_project_service.services]
+}
+
+resource "google_api_gateway_api_config" "api_config" {
+  provider      = google-beta
+  project       = var.project_id
+  api           = google_api_gateway_api.api.api_id
+  api_config_id = "${var.name}-api-config"
+
+  openapi_documents {
+    document {
+      path = "api-gateway-openapi.yaml"
+      contents = base64encode(templatefile("${path.module}/api-gateway-openapi.yaml", {
+        cloud_run_url = google_cloud_run_v2_service.cloud_run.uri
+      }))
+    }
+  }
+
+  depends_on = [
+    google_project_service.services,
+    google_cloud_run_v2_service.cloud_run
+  ]
+}
+
+resource "google_api_gateway_gateway" "api_gateway" {
+  provider   = google-beta
+  project    = var.project_id
+  region     = var.region
+  gateway_id = "${var.name}-gateway"
+  api_config = google_api_gateway_api_config.api_config.id
+
+  depends_on = [google_api_gateway_api_config.api_config]
+}
+
+# API Gateway managed service can be eventually consistent right after config creation.
+# resource "time_sleep" "wait_for_api_gateway_config" {
+#   create_duration = "60s"
+#   depends_on      = [google_api_gateway_api_config.api_config]
+# }
+
+# Enable the api gateway managed service
+resource "google_project_service" "api_gateway_managed_service" {
+  service            = google_api_gateway_api.api.managed_service
+  disable_on_destroy = false
+
+  depends_on = [
+    google_api_gateway_api.api
+  ]
+}
+
+# TODO: Figure out how to create an API Key in terraform
+# Create an API Key
+# resource "google_apikeys_key" "api_key" {
+#   name         = "${var.name}-key"
+#   display_name = "API Key for testing ${var.name}"
+#   project      = var.project_id
+
+#   restrictions {
+#     api_targets {
+#       service = google_api_gateway_api.api.managed_service
+#       # Optional: restrict to specific methods/paths
+#       # methods = ["GET*"]
+#     }
+#   }
+
+#   # Ensure the managed service is active before creating the key
+#   depends_on = [
+#     google_project_service.services,
+#     google_project_service.api_gateway_managed_service
+#   ]
+
+# }
+
+# --- 9. Outputs ---
 output "project_id" {
   value = var.project_id
 }
@@ -317,3 +406,19 @@ output "cloud_run_url" {
 output "blocking_function_uri" {
   value = google_cloudfunctions2_function.blocking_function.service_config[0].uri
 }
+
+output "api_gateway_hostname" {
+  value       = google_api_gateway_gateway.api_gateway.default_hostname
+  description = "Hostname for the API Gateway endpoint"
+}
+
+output "api_gateway_url" {
+  value       = "https://${google_api_gateway_gateway.api_gateway.default_hostname}/api"
+  description = "Base URL for the API Gateway /api routes"
+}
+
+# TODO: Output the key when creation is working
+# output "api_key_value" {
+#   value     = google_apikeys_key.api_key.key_string
+#   sensitive = true
+# }
