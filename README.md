@@ -4,8 +4,11 @@ A FastAPI based application hosted on Cloud Run that uses Firebase Auth and Fire
 
 This guide covers how to configure, deploy, and verify the app.
 
+TODO: Add steps for local development using the Firebase emulator
+TODO: Add API Gateway to Terraform configuration for API access
 TODO: Add steps for terraform deployment.
 TODO: Add steps for static landing page deployment.
+TODO: Add a custom domain
 
 ## 1. Firebase Configuration (Critical Step)
 
