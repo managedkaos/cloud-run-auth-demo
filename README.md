@@ -6,7 +6,8 @@ This guide covers how to configure, deploy, and verify the app.
 
 TODO: Add steps for local development using the Firebase emulator
 TODO: Add API Gateway to Terraform configuration for API access
-TODO: Add steps for terraform deployment.
+TODO: Add steps for terraform deployment including creating the service account
+TODO: After terraform deployment, save the URL from the output
 TODO: Add steps for static landing page deployment.
 TODO: Add a custom domain
 
@@ -68,7 +69,7 @@ A `Makefile` has been provided for easy deployment.
 
    This command runs: `gcloud run deploy cloud-run-and-firebase --source . --project cloud-run-and-firebase --region us-central1 --allow-unauthenticated`
 
-3. After deployment, the `gcloud` command will output a Service URL (e.g., `https://cloud-run-and-firebase-xyz-uc.a.run.app`). Save this URL for the next steps.
+3. After deployment, the `gcloud` command will output a Service URL (e.g., `https://PROJECT_NAME-123456789012.REGION_NAME.run.app`). Save this URL for the next steps.
 
 ## 3. Google Login Setup
 
@@ -80,13 +81,15 @@ To enable the "Sign in with Google" functionality:
 4. Toggle the **Enable** switch.
 5. Provide a **Project support email**.
 6. Select **Save**.
-7. Select **Authentication** > **Settings** > **Authorized domains**. Add the Cloud Run domain.
+7. Select **Authentication** > **Settings** > **Authorized domains**. Add the Cloud Run domains from the terraform and application deployments.
 
 ## 4. Blocking Functions Setup (Critical for Security)
 
 This project uses a Firebase Auth Blocking Function to restrict access to authorized users only.
 
 > [!IMPORTANT]
+> **TODO**: move this higher up in the doc
+>
 > **Firebase Billing**: Blocking functions require the Firebase project to be on the Blaze (pay-as-you-go) plan. Ensure your project is using this plan.
 >
 > **Manual Configuration**: You must manually enable "Blocking functions" in the Firebase Console after deployment.
@@ -142,3 +145,5 @@ After deployment, the `gcloud` command will output a Service URL (e.g., `https:/
 1. Select **Logout** in the navigation bar.
 2. You should be redirected back to the Login page.
 3. Try accessing `/dashboard` directly; you should be redirected to Login.
+
+TODO: CLean up running `terraform destroy` with notes on what needs to be removed manually
