@@ -319,10 +319,21 @@ resource "google_api_gateway_api" "api" {
 }
 
 resource "google_api_gateway_api_config" "api_config" {
-  provider      = google-beta
-  project       = var.project_id
-  api           = google_api_gateway_api.api.api_id
-  api_config_id = "${var.name}-api-config"
+  provider             = google-beta
+  project              = var.project_id
+  api                  = google_api_gateway_api.api.api_id
+  api_config_id_prefix = "${var.name}-"
+
+  # Creates the new config before trying to delete the old one
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  gateway_config {
+    backend_config {
+      google_service_account = google_service_account.gateway_sa.email
+    }
+  }
 
   openapi_documents {
     document {
@@ -347,6 +358,18 @@ resource "google_api_gateway_gateway" "api_gateway" {
   api_config = google_api_gateway_api_config.api_config.id
 
   depends_on = [google_api_gateway_api_config.api_config]
+}
+
+resource "google_service_account" "gateway_sa" {
+  account_id   = "api-gateway-sa"
+  display_name = "API Gateway Service Account"
+}
+
+resource "google_cloud_run_service_iam_member" "gateway_invoker" {
+  service  = google_cloud_run_v2_service.cloud_run.name
+  location = google_cloud_run_v2_service.cloud_run.location
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.gateway_sa.email}"
 }
 
 # API Gateway managed service can be eventually consistent right after config creation.
@@ -400,6 +423,11 @@ output "service_account_email" {
 
 output "cloud_run_url" {
   value       = google_cloud_run_v2_service.cloud_run.uri
+  description = "The publicly accessible URL of the Cloud Run service"
+}
+
+output "fastapi_docs" {
+  value       = "${google_cloud_run_v2_service.cloud_run.uri}/docs"
   description = "The publicly accessible URL of the Cloud Run service"
 }
 

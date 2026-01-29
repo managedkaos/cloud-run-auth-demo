@@ -56,6 +56,27 @@ async def dashboard(request: Request, user=Depends(get_current_user)):
 
     return templates.TemplateResponse("dashboard.html", {"request": request, "items": items, "user": user})
 
+
+# You can hit it directly now (or via the gateway once you add /api/items to the spec if needed). If you want it protected by auth, tell me and I’ll add Depends(get_current_user) filtering.
+@app.get("/items")
+async def list_items():
+    # READ: Get all items from Firestore
+    items_ref = db.collection("items")
+    items = [doc.to_dict() | {"id": doc.id} for doc in items_ref.stream()]
+    return JSONResponse(content={"items": items})
+
+@app.get("/item/{item_path}")
+async def get_item(item_path: str):
+    # READ: Get a single item by ID
+    doc_ref = db.collection("items").document(item_path)
+    doc = doc_ref.get()
+
+    if not doc.exists:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    item_data = doc.to_dict()
+    return JSONResponse(content={"item": item_data | {"id": doc.id}})
+
 @app.post("/items/create")
 async def create_item(name: str = Form(...), user=Depends(get_current_user)):
     if not user:

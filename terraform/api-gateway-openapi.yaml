@@ -21,6 +21,14 @@ paths:
       operationId: createItem
       consumes:
         - application/x-www-form-urlencoded
+      produces:
+        - text/html
+        - application/json
+      parameters:
+        - name: name
+          in: formData
+          required: true
+          type: string
       x-google-backend:
         address: ${cloud_run_url}/items/create
       responses:
@@ -32,9 +40,16 @@ paths:
       operationId: updateItem
       consumes:
         - application/x-www-form-urlencoded
+      produces:
+        - text/html
+        - application/json
       parameters:
         - name: item_path
           in: path
+          required: true
+          type: string
+        - name: name
+          in: formData
           required: true
           type: string
       x-google-backend:
@@ -46,6 +61,9 @@ paths:
     post:
       summary: Delete Item
       operationId: deleteItem
+      produces:
+        - text/html
+        - application/json
       parameters:
         - name: item_path
           in: path
@@ -59,6 +77,9 @@ paths:
   /items:
     get:
       summary: List Items
+      produces:
+        - text/html
+        - application/json
       operationId: listItems
       x-google-backend:
         address: ${cloud_run_url}/items
@@ -69,6 +90,9 @@ paths:
     get:
       summary: Get Item
       operationId: getItem
+      produces:
+        - text/html
+        - application/json
       parameters:
         - name: item_path
           in: path
